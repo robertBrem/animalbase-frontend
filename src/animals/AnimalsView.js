@@ -1,5 +1,6 @@
 import {html, render} from 'https://unpkg.com/lit-html?module';
 import AnimalService from './AnimalService.js';
+import Animal from './Animal.js';
 
 export default class AnimalsView extends HTMLElement {
     constructor() {
@@ -9,14 +10,25 @@ export default class AnimalsView extends HTMLElement {
 
     connectedCallback() {
         this.service = new AnimalService()
+        this.currentAnimal = new Animal()
+        this.reload()
+    }
+
+    reload() {
         this.service.getAll()
             .then(animals => {
-                this.animals = animals;
+                this.animals = animals.map(animal => new Animal(animal));
                 render(this.getTemplate(), this.root)
             });
     }
 
     handleAddAnimal() {
+        this.service
+            .post(this.currentAnimal)
+            .then(_ => this.reload())
+    }
+
+    handleAddAnimal2() {
         this.service
             .post({
                 "names": [
@@ -29,7 +41,7 @@ export default class AnimalsView extends HTMLElement {
                 "birthday": "2023-05-01",
                 "acquired": "2023-05-01"
             })
-            .then(render(this.getTemplate(), this.root))
+            .then(_ => this.reload())
     }
 
     getTemplate() {
@@ -38,7 +50,7 @@ export default class AnimalsView extends HTMLElement {
                 <tr>
                     <td>${animal.chipId}</td>
                     <td><img src="${animal.imagePaths[0].path}"/></td>
-                    <td>${animal.names[0].translation}</td>
+                    <td>${animal.getName()}</td>
                     <td>${animal.birthday}</td>
                     <td>${animal.acquired}</td>
                 </tr>`);
@@ -47,21 +59,26 @@ export default class AnimalsView extends HTMLElement {
             <h1>Animals</h1>
             <h2>Reptilien</h2>
             <h3>Schildkröten</h3>
+            Chip ID: <input type="text" @change=${e => this.currentAnimal.chipId = (e.target.value)} /><br />
+            Image: <input type="text" @change=${e => this.currentAnimal.imagePaths.push({"path": e.target.value})} /><br />
+            Name: <input type="text" @change=${e => this.currentAnimal.names.push({"translation": e.target.value, "language": getLanguage()})} /><br />
+            Geburtstag: <input type="date" @change=${e => this.currentAnimal.birthday = (e.target.value)} /><br />
+            Hier seit: <input type="date" @change=${e => this.currentAnimal.acquired = (e.target.value)} /><br />
             <h4 @click="${_ => this.handleAddAnimal()}">Spaltenschildkröte</h4>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Chip ID</th>
-                        <th>BILD</th>
-                        <th>Name</th>
-                        <th>Alter</th>
-                        <th>Hier seit</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    ${animalEntries}
-                    </tbody>
-                </table>
+            <table>
+                <thead>
+                <tr>
+                    <th>Chip ID</th>
+                    <th>BILD</th>
+                    <th>Name</th>
+                    <th>Geburtstag</th>
+                    <th>Hier seit</th>
+                </tr>
+                </thead>
+                <tbody>
+                ${animalEntries}
+                </tbody>
+            </table>
         `
     }
 
